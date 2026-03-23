@@ -103,7 +103,7 @@ const getSageAccounts = async (req, res) => {
     const result = await pool.request().query(`
       SELECT TOP 500 DCLink AS id, Name AS name, Account AS code
       FROM Client
-      WHERE [Type] = 0
+      WHERE Name IS NOT NULL
       ORDER BY Name ASC
     `);
     res.json({ success: true, data: result.recordset });
