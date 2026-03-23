@@ -1,0 +1,771 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VeriSage Pro API Documentation</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" sizes="16x16" href="verisage-logo.png">
+
+    <style>
+        :root {
+            --primary: #1a3a5f;
+            --secondary: #2c7bb6;
+            --accent: #ff6b35;
+            --light: #f8f9fa;
+            --dark: #343a40;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --gray: #6c757d;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f7fa;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header Styles */
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 1rem 0;
+            box-shadow: var(--box-shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo {
+            height: 50px;
+            width: auto;
+        }
+
+        .company-info h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        .company-info p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 25px;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 8px 12px;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+        }
+
+        nav a:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Hero Section */
+        .hero {
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%231a3a5f" fill-opacity="0.1" d="M0,192L48,197.3C96,203,192,213,288,229.3C384,245,480,267,576,261.3C672,256,768,224,864,218.7C960,213,1056,235,1152,240C1248,245,1344,235,1392,229.3L1440,224L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') no-repeat bottom;
+            background-size: contain;
+            padding: 3rem 0;
+            text-align: center;
+        }
+
+        .hero-content {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .hero h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            color: var(--dark);
+        }
+
+        .btn {
+            display: inline-block;
+            background: var(--accent);
+            color: white;
+            padding: 12px 25px;
+            border-radius: var(--border-radius);
+            text-decoration: none;
+            font-weight: 600;
+            transition: var(--transition);
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .btn:hover {
+            background: #e05a2a;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        /* Main Content */
+        main {
+            padding: 3rem 0;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .section-title h2 {
+            font-size: 2rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+
+        .section-title p {
+            color: var(--gray);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        /* Documentation Sections */
+        .docs-section {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .docs-section h3 {
+            color: var(--secondary);
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #eaeaea;
+        }
+
+        .endpoint {
+            background: #f8f9fa;
+            border-left: 4px solid var(--secondary);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-radius: 0 var(--border-radius) var(--border-radius) 0;
+        }
+
+        .endpoint-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .method {
+            font-weight: bold;
+            padding: 5px 12px;
+            border-radius: 4px;
+            color: white;
+        }
+
+        .get { background: #28a745; }
+        .post { background: #007bff; }
+        .put { background: #ffc107; color: #212529; }
+        .delete { background: #dc3545; }
+
+        .endpoint-url {
+            font-family: monospace;
+            background: #e9ecef;
+            padding: 8px 12px;
+            border-radius: 4px;
+            flex-grow: 1;
+            margin: 0 15px;
+        }
+
+        .endpoint-description {
+            margin-bottom: 1rem;
+        }
+
+        .params-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        .params-table th {
+            background: #e9ecef;
+            padding: 12px;
+            text-align: left;
+        }
+
+        .params-table td {
+            padding: 12px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .params-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .response-example {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            overflow-x: auto;
+            margin-top: 1rem;
+        }
+
+        .response-example pre {
+            margin: 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--dark);
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+        }
+
+        .footer-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .footer-logo {
+            height: 40px;
+            filter: brightness(0) invert(1);
+        }
+
+        .copyright {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            nav ul {
+                gap: 10px;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .hero h2 {
+                font-size: 2rem;
+            }
+            
+            .endpoint-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .endpoint-url {
+                margin: 10px 0 0 0;
+                width: 100%;
+            }
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="container header-content">
+            <div class="logo-container">
+                <img src="verisage-logo.png" alt="VeriSage Pro Logo" class="logo">
+                <div class="company-info">
+                    <h1>VeriSage Pro API</h1>
+                    <p>Documentation by Lychee Tech Team</p>
+                </div>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="#overview"><i class="fas fa-home"></i> Overview</a></li>
+                    <li><a href="#authentication"><i class="fas fa-key"></i> Authentication</a></li>
+                    <li><a href="#endpoints"><i class="fas fa-plug"></i> Endpoints</a></li>
+                    <li><a href="#examples"><i class="fas fa-code"></i> Examples</a></li>
+                    <li><a href="#support"><i class="fas fa-life-ring"></i> Support</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container hero-content">
+            <h2>VeriSage Pro API Documentation</h2>
+            <p>Comprehensive guide to integrating with our domain management system through RESTful API endpoints.</p>
+            <a href="#endpoints" class="btn">View API Endpoints</a>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="container">
+
+        <!-- Overview Section -->
+        <section id="overview" class="docs-section">
+            <h3><i class="fas fa-book-open"></i> API Overview</h3>
+            <p>The VeriSage Pro API provides programmatic access to domain registration, management, and billing systems. This documentation covers authentication methods, available endpoints, request/response formats, and example implementations.</p>
+            
+            <h4>Base URL</h4>
+            <p>All API requests should be made to: <code>https://api.verisagepro.com/v1</code></p>
+            
+            <h4>Rate Limiting</h4>
+            <p>The API implements rate limiting to ensure fair usage:</p>
+            <ul>
+                <li>Authenticated requests: 1000 per hour</li>
+                <li>Unauthenticated requests: 100 per hour</li>
+            </ul>
+        </section>
+
+        <!-- Authentication Section -->
+        <section id="authentication" class="docs-section">
+            <h3><i class="fas fa-lock"></i> Authentication</h3>
+            <p>All API requests require authentication using API keys. Include your API key in the Authorization header of each request.</p>
+            
+            <h4>API Key Authentication</h4>
+            <p>Add the following header to all requests:</p>
+            <div class="response-example">
+                <pre>Authorization: Bearer YOUR_API_KEY_HERE</pre>
+            </div>
+            
+            <h4>Obtaining Your API Key</h4>
+            <ol>
+                <li>Log in to your VeriSage Pro account</li>
+                <li>Navigate to Account Settings > API Access</li>
+                <li>Generate a new API key or use an existing one</li>
+                <li>Store your API key securely</li>
+            </ol>
+        </section>
+
+
+        <!-- Endpoints Section -->
+        <section id="endpoints" class="docs-section">
+            <h3><i class="fas fa-plug"></i> API Endpoints</h3>
+            
+            <!-- Domain Search Endpoint -->
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method get">GET</span>
+                    <span class="endpoint-url">/domains/search</span>
+                    <span class="endpoint-title">Domain Availability Check</span>
+                </div>
+                <div class="endpoint-description">
+                    <p>Check the availability of domain names across multiple extensions.</p>
+                </div>
+                
+                <h4>Query Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>domain</td>
+                            <td>string</td>
+                            <td>Yes</td>
+                            <td>Domain name to check (without extension)</td>
+                        </tr>
+                        <tr>
+                            <td>tlds</td>
+                            <td>array</td>
+                            <td>No</td>
+                            <td>List of TLDs to check (default: com,net,org)</td>
+                        </tr>
+                        <tr>
+                            <td>sensitive</td>
+                            <td>boolean</td>
+                            <td>No</td>
+                            <td>Include sensitive domains in results</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Response Example</h4>
+                <div class="response-example">
+                    <pre>{
+  "status": "success",
+  "data": [
+    {
+      "domain": "example.com",
+      "available": true,
+      "price": 12.99,
+      "currency": "USD"
+    },
+    {
+      "domain": "example.net",
+      "available": false,
+      "reason": "registered"
+    }
+  ]
+}</pre>
+                </div>
+            </div>
+            
+            <!-- Register Domain Endpoint -->
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method post">POST</span>
+                    <span class="endpoint-url">/domains/register</span>
+                    <span class="endpoint-title">Register a New Domain</span>
+                </div>
+                <div class="endpoint-description">
+                    <p>Register a new domain name with specified contact details.</p>
+                </div>
+                
+                <h4>Request Body</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Field</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>domain</td>
+                            <td>string</td>
+                            <td>Yes</td>
+                            <td>Fully qualified domain name to register</td>
+                        </tr>
+                        <tr>
+                            <td>period</td>
+                            <td>integer</td>
+                            <td>Yes</td>
+                            <td>Registration period in years (1-10)</td>
+                        </tr>
+                        <tr>
+                            <td>registrant</td>
+                            <td>object</td>
+                            <td>Yes</td>
+                            <td>Registrant contact information</td>
+                        </tr>
+                        <tr>
+                            <td>admin</td>
+                            <td>object</td>
+                            <td>Yes</td>
+                            <td>Administrative contact information</td>
+                        </tr>
+                        <tr>
+                            <td>tech</td>
+                            <td>object</td>
+                            <td>Yes</td>
+                            <td>Technical contact information</td>
+                        </tr>
+                        <tr>
+                            <td>billing</td>
+                            <td>object</td>
+                            <td>Yes</td>
+                            <td>Billing contact information</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Response Example</h4>
+                <div class="response-example">
+                    <pre>{
+  "status": "success",
+  "data": {
+    "domain": "newdomain.com",
+    "registration_date": "2023-06-15T10:30:00Z",
+    "expiration_date": "2024-06-15T10:30:00Z",
+    "nameservers": ["ns1.example.com", "ns2.example.com"]
+  }
+}</pre>
+                </div>
+            </div>
+            
+            <!-- Update Nameservers Endpoint -->
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method put">PUT</span>
+                    <span class="endpoint-url">/domains/{domain}/nameservers</span>
+                    <span class="endpoint-title">Update Domain Nameservers</span>
+                </div>
+                <div class="endpoint-description">
+                    <p>Update the nameservers for an existing domain.</p>
+                </div>
+                
+                <h4>Path Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>domain</td>
+                            <td>string</td>
+                            <td>Fully qualified domain name</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Request Body</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Field</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>nameservers</td>
+                            <td>array</td>
+                            <td>Yes</td>
+                            <td>List of nameserver hostnames (2-13)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Response Example</h4>
+                <div class="response-example">
+                    <pre>{
+  "status": "success",
+  "message": "Nameservers updated successfully",
+  "data": {
+    "domain": "example.com",
+    "nameservers": [
+      "ns1.newhost.com",
+      "ns2.newhost.com"
+    ]
+  }
+}</pre>
+                </div>
+            </div>
+            
+            <!-- Delete Domain Endpoint -->
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method delete">DELETE</span>
+                    <span class="endpoint-url">/domains/{domain}</span>
+                    <span class="endpoint-title">Delete Domain</span>
+                </div>
+                <div class="endpoint-description">
+                    <p>Request deletion of a domain (subject to registry policies).</p>
+                </div>
+                
+                <h4>Path Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>domain</td>
+                            <td>string</td>
+                            <td>Fully qualified domain name to delete</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4>Response Example</h4>
+                <div class="response-example">
+                    <pre>{
+  "status": "success",
+  "message": "Domain deletion request submitted",
+  "data": {
+    "domain": "oldsite.com",
+    "request_id": "req_1234567890"
+  }
+}</pre>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- Code Examples Section -->
+        <section id="examples" class="docs-section">
+            <h3><i class="fas fa-code"></i> Code Examples</h3>
+            
+            <h4>Python Example</h4>
+            <div class="response-example">
+                <pre>import requests
+
+url = "https://api.verisagepro.com/v1/domains/search"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY"
+}
+params = {
+    "domain": "mynewwebsite",
+    "tlds": ["com", "net", "org"]
+}
+
+response = requests.get(url, headers=headers, params=params)
+data = response.json()
+print(data)</pre>
+            </div>
+            
+            <h4>JavaScript Example</h4>
+            <div class="response-example">
+                <pre>async function checkDomain(domain) {
+  const response = await fetch(
+    `https://api.verisagepro.com/v1/domains/search?domain=${domain}&tlds=com,net`, 
+    {
+      method: 'GET',
+      headers: {
+        'Authorization': 'Bearer YOUR_API_KEY'
+      }
+    }
+  );
+  
+  const data = await response.json();
+  console.log(data);
+}
+
+checkDomain('example');</pre>
+            </div>
+        </section>
+
+
+        <!-- Support Section -->
+        <section id="support" class="docs-section">
+            <h3><i class="fas fa-life-ring"></i> Support & Contact</h3>
+            <p>If you need assistance with the API or encounter any issues, please contact our technical support team:</p>
+            
+            <div style="display: flex; gap: 30px; margin-top: 20px;">
+                <div>
+                    <h4>Email Support</h4>
+                    <p><i class="fas fa-envelope"></i> info@lycheeng.com</p>
+                </div>
+                <!-- <div>
+                    <h4>Developer Portal</h4>
+                    <p><i class="fas fa-globe"></i> dev.verisagepro.com</p>
+                </div> -->
+                <div>
+                    <h4>Lychee Tech Team</h4>
+                    <p><i class="fas fa-users"></i> olayinka.aro@lycheeng.com</p>
+                </div>
+            </div>
+            
+            <!-- <div style="margin-top: 30px; text-align: center;">
+                <a href="#" class="btn"><i class="fas fa-download"></i> Download API Specification</a>
+                <a href="#" class="btn" style="background: #2c7bb6; margin-left: 15px;"><i class="fab fa-github"></i> View on GitHub</a>
+            </div> -->
+        
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container footer-content">
+            <img src="verisage-logo.png" alt="VeriSage Pro Logo" class="footer-logo">
+            <p class="copyright">© 2026 VeriSage Pro by Lychee Integrated Solutions. 
+            <br> All rights reserved.</p>
+            <p>This documentation was created by the Lychee Tech Team - the technology department of Lychee Integrated Solutions.</p>
+        </div>
+    </footer>
+
+
+
+    <script>
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                
+                const targetId = this.getAttribute('href');
+                const targetElement = document.querySelector(targetId);
+                
+                window.scrollTo({
+                    top: targetElement.offsetTop - 80,
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        // Highlight current section in navigation
+        window.addEventListener('scroll', function() {
+            const sections = document.querySelectorAll('.docs-section');
+            const navLinks = document.querySelectorAll('nav a');
+            
+            let current = '';
+            
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+                
+                if(pageYOffset >= (sectionTop - 100)) {
+                    current = section.getAttribute('id');
+                }
+            });
+            
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if(link.getAttribute('href') === `#${current}`) {
+                    link.classList.add('active');
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>
