@@ -5,14 +5,15 @@ const logger = require('../config/logger');
 // GET /api/transactions  — paginated feed with filters
 const getTransactions = async (req, res) => {
   try {
-    const pool = await appPoolPromise;
-    const page     = parseInt(req.query.page  || 1);
-    const limit    = parseInt(req.query.limit || 20);
+    const pool     = await appPoolPromise;
+    const page     = parseInt(req.query.page   || 1);
+    const limit    = parseInt(req.query.limit  || 20);
     const offset   = (page - 1) * limit;
-    const status   = req.query.status   || null;
-    const search   = req.query.search   || null;
-    const fromDate = req.query.from     || null;
-    const toDate   = req.query.to       || null;
+    const status   = req.query.status          || null;
+    const txnType  = req.query.transaction_type || null;
+    const search   = req.query.search          || null;
+    const fromDate = req.query.from            || null;
+    const toDate   = req.query.to              || null;
 
     const request = pool.request()
       .input('limit',  sql.Int, limit)
@@ -24,9 +25,19 @@ const getTransactions = async (req, res) => {
       request.input('status', sql.VarChar, status);
       where += ' AND sync_status = @status';
     }
+    if (txnType) {
+      request.input('txnType', sql.VarChar, txnType);
+      where += ' AND transaction_type = @txnType';
+    }
     if (search) {
       request.input('search', sql.NVarChar, `%${search}%`);
-      where += ' AND (registrar_name LIKE @search OR cocca_transaction_ref LIKE @search OR domain_name LIKE @search)';
+      where += ` AND (
+        registrar_name          LIKE @search OR
+        cocca_transaction_ref   LIKE @search OR
+        domain_name             LIKE @search OR
+        transaction_type        LIKE @search OR
+        description             LIKE @search
+      )`;
     }
     if (fromDate) {
       request.input('fromDate', sql.DateTime, new Date(fromDate));
@@ -40,8 +51,9 @@ const getTransactions = async (req, res) => {
     const result = await request.query(`
       SELECT
         id, cocca_transaction_ref, registrar_id, registrar_name,
+        transaction_type, description,
         amount, vat_amount, amount_excl_vat, payment_method,
-        top_up_date, package_name, domain_name, registration_years,
+        top_up_date, domain_name, package_name, registration_years,
         sync_status, retry_count, sage_transaction_ref, sage_posted_at,
         last_error, created_at, updated_at
       FROM transactions
@@ -74,16 +86,27 @@ const getStats = async (req, res) => {
     const pool = await appPoolPromise;
     const result = await pool.request().query(`
       SELECT
-        COUNT(*)                                         AS total,
-        SUM(CASE WHEN sync_status='posted'     THEN 1 ELSE 0 END) AS posted,
-        SUM(CASE WHEN sync_status='pending'    THEN 1 ELSE 0 END) AS pending,
-        SUM(CASE WHEN sync_status='processing' THEN 1 ELSE 0 END) AS processing,
-        SUM(CASE WHEN sync_status='failed'     THEN 1 ELSE 0 END) AS failed,
-        SUM(CASE WHEN sync_status='dead'       THEN 1 ELSE 0 END) AS dead,
-        SUM(CASE WHEN sync_status='posted'     THEN amount ELSE 0 END) AS total_posted_amount,
-        SUM(amount)                                      AS total_amount,
-        SUM(CASE WHEN CAST(top_up_date AS DATE)=CAST(GETDATE() AS DATE) THEN 1 ELSE 0 END) AS today_count,
-        SUM(CASE WHEN CAST(top_up_date AS DATE)=CAST(GETDATE() AS DATE) THEN amount ELSE 0 END) AS today_amount
+        COUNT(*)                                                          AS total,
+        SUM(CASE WHEN sync_status='posted'     THEN 1 ELSE 0 END)        AS posted,
+        SUM(CASE WHEN sync_status='pending'    THEN 1 ELSE 0 END)        AS pending,
+        SUM(CASE WHEN sync_status='processing' THEN 1 ELSE 0 END)        AS processing,
+        SUM(CASE WHEN sync_status='failed'     THEN 1 ELSE 0 END)        AS failed,
+        SUM(CASE WHEN sync_status='dead'       THEN 1 ELSE 0 END)        AS dead,
+        SUM(CASE WHEN sync_status='posted'     THEN amount ELSE 0 END)   AS total_posted_amount,
+        SUM(amount)                                                       AS total_amount,
+        SUM(CASE WHEN CAST(top_up_date AS DATE)=CAST(GETDATE() AS DATE)
+                 THEN 1 ELSE 0 END)                                      AS today_count,
+        SUM(CASE WHEN CAST(top_up_date AS DATE)=CAST(GETDATE() AS DATE)
+                 THEN amount ELSE 0 END)                                 AS today_amount,
+        -- Counts by transaction type (for dashboard breakdown)
+        SUM(CASE WHEN transaction_type='Registration'   THEN 1 ELSE 0 END) AS type_registration,
+        SUM(CASE WHEN transaction_type='Renewal'        THEN 1 ELSE 0 END) AS type_renewal,
+        SUM(CASE WHEN transaction_type='Auto Renewal'   THEN 1 ELSE 0 END) AS type_auto_renewal,
+        SUM(CASE WHEN transaction_type='Refund'         THEN 1 ELSE 0 END) AS type_refund,
+        SUM(CASE WHEN transaction_type='Transfer Fee'   THEN 1 ELSE 0 END) AS type_transfer,
+        SUM(CASE WHEN transaction_type NOT IN (
+          'Registration','Renewal','Auto Renewal','Transfer Fee','Refund'
+        ) THEN 1 ELSE 0 END)                                             AS type_other
       FROM transactions
     `);
     res.json({ success: true, data: result.recordset[0] });
@@ -96,7 +119,7 @@ const getStats = async (req, res) => {
 // POST /api/transactions/:id/retry
 const retryTransaction = async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const id   = parseInt(req.params.id);
     const pool = await appPoolPromise;
 
     const existing = await pool.request()
@@ -112,10 +135,16 @@ const retryTransaction = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Transaction already posted' });
     }
 
-    // Reset for retry
     await pool.request()
       .input('id', sql.Int, id)
-      .query(`UPDATE transactions SET sync_status='pending', retry_count=0, last_error=NULL, updated_at=GETDATE() WHERE id=@id`);
+      .query(`
+        UPDATE transactions
+        SET sync_status = 'pending',
+            retry_count = 0,
+            last_error  = NULL,
+            updated_at  = GETDATE()
+        WHERE id = @id
+      `);
 
     processTransaction(id).catch(err =>
       logger.error('[TransactionsController] Manual retry error', { id, err: err.message })
