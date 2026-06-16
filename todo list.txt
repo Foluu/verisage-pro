@@ -1,0 +1,175 @@
+Let me read the full project structure carefully before writing a single line of script.I have everything I need. The client is on Windows Server, no VS Code, deploying via USB. I'll write two scripts — one `.bat` for the actual deployment and a proper `.env` setup guide — and build a complete step-by-step guide.
+
+Note one key architectural decision first: since the backend's `index.js` doesn't currently serve the React build as static files, I'll add that capability so the entire system runs on a **single port (4000)** with no separate frontend server needed in production.Good. Now I'll produce three deliverables: the updated `index.js` with static serving, the deployment `.bat` script, and the complete written guide.Now copy everything to outputs:Three files delivered. Here is the complete deployment guide.
+
+---
+
+## Before You Leave Your Office — Prepare the USB Drive
+
+Do all of this on your own machine before touching the client's server.
+
+**Step 1 — Run the obfuscation build**
+```
+cd backend
+node obfuscate.js
+```
+This creates `backend/dist/`. That is what you deploy — not `src/`.
+
+**Step 2 — Build the React frontend**
+```
+cd frontend
+npm install
+npm run build
+```
+This creates `frontend/dist/`. Rename it `frontend-build` for clarity.
+
+**Step 3 — Replace `backend/dist/src/index.js`**
+Take the `backend_index_updated.js` file from this delivery and copy it into `backend/dist/src/index.js`, replacing the existing one. This updated version adds static file serving so the React app and API both run on port 4000 with no separate server needed.
+
+**Step 4 — Structure your USB drive exactly like this**
+```
+USB:\
+  deploy.bat              ← from this delivery
+  manage.bat              ← from this delivery
+  VeriSagePro\
+    backend\              ← contents of backend/dist/
+      src\
+        index.js          ← the updated one
+        config\
+        controllers\
+        middleware\
+        routes\
+        services\
+      package.json
+      .env.example
+      logs\
+    frontend-build\       ← contents of frontend/dist/
+      index.html
+      assets\
+```
+
+---
+
+## On the Client's Server — Pre-Flight Checks
+
+Before running the script, open **SSMS** on the server and run these three queries to collect the values you'll need during the `.env` setup:
+
+```sql
+-- 1. Find the SAGE Stock Code ID for Registrar Services
+SELECT StockLink, Description_1 FROM StkItem
+WHERE Description_1 LIKE '%Registrar%' OR Description_1 LIKE '%Domain%'
+
+-- 2. Find the default Warehouse ID
+SELECT WhseLink, WhseCode, WhseDescription FROM _etblWarehouse
+
+-- 3. Find the VAT Tax Type ID
+SELECT idTaxRate, cTaxRateCode, fTaxRate FROM TaxRate
+WHERE fTaxRate = 7.5
+
+-- 4. Create the VeriSagePro database if it doesn't exist yet
+CREATE DATABASE VeriSagePro;
+```
+
+Write these three numbers down. The deploy script will ask for them.
+
+---
+
+## Running the Deployment
+
+1. Plug in the USB drive. Note the drive letter (e.g. `D:`, `E:`).
+2. Click **Start** → type `cmd` → right-click **Command Prompt** → **Run as administrator**.
+3. Navigate to the USB:
+```
+D:
+```
+4. Run the script:
+```
+deploy.bat
+```
+
+The script will walk you through every step interactively. It will ask you for values one at a time — just type each answer and press Enter. The whole process takes about 3–5 minutes.
+
+---
+
+## What the Script Does — Step by Step
+
+| Step | What happens |
+|---|---|
+| Checks Node.js ≥ v18 | Stops immediately with a clear message if missing |
+| Checks / installs PM2 | Installs globally with `npm install -g pm2` if not found |
+| Detects USB source files | Validates both backend and frontend folders exist before touching anything |
+| Copies files to server | Uses `xcopy` to mirror both folders to `C:\VeriSagePro\` |
+| Runs `npm install` | Installs all production dependencies into `node_modules` |
+| Builds `.env` interactively | Asks each value one at a time, writes the completed file |
+| Runs migration | `node src/config/migrate.js` — creates tables, creates admin user |
+| Starts with PM2 | Registers the process as `verisage-pro`, saves the PM2 process list |
+| Configures boot startup | `pm2 startup` — app automatically restarts after a server reboot |
+| Health check | Hits `http://localhost:4000/health` and prints the response |
+
+---
+
+## How the Server Runs After Deployment
+
+```
+Windows boots
+  └─ PM2 auto-starts  (registered as a Windows startup task)
+       └─ node src/index.js  (the Express server)
+            ├─ Port 4000 open
+            ├─ GET /         → serves React frontend (index.html)
+            ├─ GET /api/*    → backend REST API
+            ├─ POST /api/webhook/topup  → CoCCA transactions
+            └─ Schedulers running in background (retry + income recognition)
+```
+
+NiRA staff open a browser and go to `http://<server-ip>:4000`. That's it. The React dashboard loads, they log in, and everything is live. No VS Code. No terminal stays open. No separate Vite dev server.
+
+---
+
+## Day-to-Day Management After Deployment
+
+Double-click `manage.bat` (as Administrator) from the USB or from the server itself. It gives you a numbered menu:
+
+```
+[1] Check status          [6] View last 50 log lines
+[2] View live logs        [7] Open .env for editing
+[3] Restart application   [8] Run migration again
+[4] Stop application      [9] Check health endpoint
+[5] Start application     [0] Exit
+```
+
+Or use these commands directly in any Command Prompt:
+
+```bat
+pm2 status                      :: Is the app running?
+pm2 logs verisage-pro           :: Stream live logs (Ctrl+C to stop)
+pm2 restart verisage-pro        :: Apply .env changes or after update
+pm2 stop verisage-pro           :: Graceful stop
+pm2 logs verisage-pro --lines 100 --nostream   :: Last 100 lines
+```
+
+---
+
+## Updating the Application Later
+
+When you deliver a new version:
+
+1. Run `node obfuscate.js` on your machine → new `dist/` folder.
+2. Build frontend again → new `frontend/dist/`.
+3. Copy both to USB.
+4. On the client server, run:
+```bat
+pm2 stop verisage-pro
+xcopy "D:\VeriSagePro\backend\*" "C:\VeriSagePro\backend\" /s /e /y
+xcopy "D:\VeriSagePro\frontend-build\*" "C:\VeriSagePro\public\" /s /e /y
+cd C:\VeriSagePro\backend
+npm install --omit=dev
+pm2 start src/index.js --name verisage-pro
+pm2 save
+```
+
+The `.env` file survives updates because `xcopy` with `/y` only overwrites files that exist on the USB — and you never put `.env` on the USB.
+
+
+
+
+http://<server-ip>:4000
