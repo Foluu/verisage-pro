@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node obfuscate.js)",
+      "Bash(node --check dist/src/index.js)"
+    ]
+  }
+}
